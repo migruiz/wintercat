@@ -58,9 +58,6 @@ void WIFI_Connect() {
 
 
 void setup() {
-  pinMode(pin, OUTPUT);
-  analogWriteResolution(11);
-  analogWrite(pin, 0);
   Serial.begin(9600);
   WIFI_Connect();
 }

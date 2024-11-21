@@ -38,7 +38,8 @@
 void setup() {
   Serial.begin(9600);
   Serial.println("Setup started");
-
+  pinMode(50, OUTPUT);
+  digitalWrite(50, LOW);  
   //Setup received data
   attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
 
