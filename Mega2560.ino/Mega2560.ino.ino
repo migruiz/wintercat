@@ -39,7 +39,7 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Setup started");
   pinMode(50, OUTPUT);
-  digitalWrite(50, LOW);  
+  digitalWrite(50, HIGH);  
   //Setup received data
   attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
 
@@ -72,6 +72,7 @@ void loop() {
   }
   if (Serial.available() > 0) {
     String str = Serial.readString();
+    Serial.println(str);
 
     if (str == "on") {
       digitalWrite(50, HIGH);

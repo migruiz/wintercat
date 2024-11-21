@@ -59,6 +59,7 @@ void WIFI_Connect() {
 
 void setup() {
   Serial.begin(9600);
+  Serial1.begin(115200);
   WIFI_Connect();
 }
 
@@ -72,13 +73,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial1.print((char)payload[i]);
   }
 
-  Serial.println();
-  Serial.println("-----------------------");
 
   if (!strncmp((char*)payload, "on", length)) {
-    Serial.println("on")
+    Serial.println("on");
+    Serial1.println("on");
   } else if (!strncmp((char*)payload, "off", length)) {
-    Serial.println("off")
+    Serial.println("off");
+    Serial1.println("off");
   }
 }
 
