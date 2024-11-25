@@ -13,9 +13,9 @@ res = rx.merge(delayedNumbers,delayedLetters)
 
 def calculateCurrent(acc,curr):
     if curr["type"] == "number":
-        return {"number" : curr["value"],"letter" : acc["letter"]}
+        return {**acc, 'number': curr["value"]}
     else:
-        return {"number" : acc["number"],"letter" : curr["value"]}
+        return {**acc, 'letter': curr["value"]}
 
 comb1 = res.pipe(
    ops.scan(calculateCurrent, {"number":0, "letter":''}))
