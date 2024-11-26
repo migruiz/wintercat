@@ -86,15 +86,18 @@ void loop() {
     JsonDocument docReading;
     DeserializationError error = deserializeJson(docReading, str);
     if (error) {
-      Serial.print(F("deserializeJson() failed: "));
-      Serial.println(error.c_str());
+
+      JsonDocument errorDoc;
+      errorDoc["messageType"] = "jsonReadError";
+      errorDoc["error"] = error.c_str();
+      errorDoc["json"] = str;
+      serializeJson(errorDoc, Serial);
+      Serial.println();
       return;
     }
     const char* messageType = docReading["messageType"];
-    Serial.println(messageType);
     if (String(messageType) == "heatRelay") {
       const bool value = docReading["value"];
-      Serial.println(String(value));
       if (value) {
         digitalWrite(RELAY_PIN, HIGH);
       } else {
