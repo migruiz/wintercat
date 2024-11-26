@@ -23,27 +23,33 @@
  * Arduino UNO <-- (PIN 2) --> 433Mhz receiver <=============> Oregon sensors
  */
 
-// Enable debug prints
-#define MY_DEBUG
 
+#include <ArduinoJson.h>
 #include <SPI.h>
 #include <EEPROM.h>
 #include <Oregon.h>
 
 //Define pin where is 433Mhz receiver (here, pin 2)
 #define MHZ_RECEIVER_PIN 2
-//Define maximum Oregon sensors (here, 3 differents sensors)
-#define COUNT_OREGON_SENSORS 3
+#define RELAY_PIN 50
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("Setup started");
+  JsonDocument setupDoc;
+  setupDoc["messageType"] = "debug";
+  setupDoc["value"] = "Setup started";
+  serializeJson(setupDoc, Serial);
+  Serial.println();
   pinMode(50, OUTPUT);
-  digitalWrite(50, LOW);  
+  digitalWrite(50, LOW);
   //Setup received data
   attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
 
-  Serial.println("Setup completed");
+  JsonDocument setupCompletedDoc;
+  setupCompletedDoc["messageType"] = "debug";
+  setupCompletedDoc["value"] = "Setup Completed";
+  serializeJson(setupCompletedDoc, Serial);
+  Serial.println();
 }
 
 
@@ -59,15 +65,17 @@ void loop() {
     if (orscV2.nextPulse(p)) {
       //Decode Hex Data once
       const byte* DataDecoded = DataToDecoder(orscV2);
-      //Find or save Oregon sensors's ID
-      int SensorID = FindSensor(id(DataDecoded), COUNT_OREGON_SENSORS);
 
-      // just for DEBUG
-      OregonType(DataDecoded);
-      channel(DataDecoded);
-      temperature(DataDecoded);
-      humidity(DataDecoded);
-      battery(DataDecoded);
+      JsonDocument doc;
+      doc["messageType"] = "oregonReading";
+      doc["id"] = String(id(DataDecoded));
+      doc["channel"] = String(channel(DataDecoded));
+      doc["model"] = String(OregonType(DataDecoded));
+      doc["temperature"] = String(temperature(DataDecoded));
+      doc["humidity"] = String(humidity(DataDecoded));
+      doc["battery"] = String(battery(DataDecoded));
+      serializeJson(doc, Serial);
+      Serial.println();
     }
   }
   if (Serial.available() > 0) {
