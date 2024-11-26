@@ -19,7 +19,6 @@ const char* mqttPassword = "";
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);  //lib required for mqtt
 
-int pin = 14;
 int connectionTries = 0;
 
 
@@ -44,7 +43,7 @@ void WIFI_Connect() {
   client.setCallback(callback);
   while (!client.connected()) {
     Serial1.println("Connecting to MQTT...");
-    if (client.connect("OREGON", mqttUser, mqttPassword)) {
+    if (client.connect("WINTERCAT", mqttUser, mqttPassword)) {
       Serial1.println("connected");
     } else {
       Serial1.print("failed with state ");
@@ -52,8 +51,8 @@ void WIFI_Connect() {
       delay(2000);
     }
   }
-  client.publish("OREGON/esp", "Hello from OREGON");
-  client.subscribe("OREGON/relay");
+  client.publish("WINTERCAT", "Hello from WINTERCAT");
+  client.subscribe("WINTERCAT/operate");
 }
 
 
@@ -65,6 +64,10 @@ void setup() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
+
+
+
+
   Serial1.print("Message arrived in topic: ");
   Serial1.println(topic);
 
@@ -73,14 +76,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial1.print((char)payload[i]);
   }
 
-
-  if (!strncmp((char*)payload, "on", length)) {
-    Serial.println("on");
-    Serial1.println("on");
-  } else if (!strncmp((char*)payload, "off", length)) {
-    Serial.println("off");
-    Serial1.println("off");
-  }
+  payload[length] = 0;
+  String recv_payload = String((char*)payload);
+  client.publish("WINTERCAT/CALLBACK", topic);
+  client.publish("WINTERCAT/CALLBACK",  recv_payload.c_str());
+  
 }
 
 void loop() {
@@ -96,7 +96,7 @@ void loop() {
     String str = Serial.readString();
     str.trim();
     Serial1.println(str);
-    client.publish("OREGON/esp", str.c_str());
+    client.publish("WINTERCAT/readings", str.c_str());
   }
   client.loop();
 }
