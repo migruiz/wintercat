@@ -43,7 +43,7 @@ void setup() {
   Serial.println();
 
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
+  digitalWrite(RELAY_PIN, HIGH);
   //Setup received data
   attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
 
@@ -100,11 +100,11 @@ void loop() {
       const bool value = docReading["value"];
       JsonDocument actuatorDoc;
       if (value) {
-        digitalWrite(RELAY_PIN, HIGH);
-        actuatorDoc["state"] = HIGH;
-      } else {
         digitalWrite(RELAY_PIN, LOW);
         actuatorDoc["state"] = LOW;
+      } else {
+        digitalWrite(RELAY_PIN, HIGH);
+        actuatorDoc["state"] = HIGH;
       }
       actuatorDoc["messageType"] = "actuatorOK";
       actuatorDoc["pin"] = RELAY_PIN;
