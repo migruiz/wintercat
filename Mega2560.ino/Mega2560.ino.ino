@@ -35,13 +35,15 @@
 
 void setup() {
   Serial.begin(9600);
+
   JsonDocument setupDoc;
   setupDoc["messageType"] = "debug";
   setupDoc["value"] = "Setup started";
   serializeJson(setupDoc, Serial);
   Serial.println();
-  pinMode(50, OUTPUT);
-  digitalWrite(50, LOW);
+
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, LOW);
   //Setup received data
   attachInterrupt(digitalPinToInterrupt(MHZ_RECEIVER_PIN), ext_int_1, CHANGE);
 
@@ -81,12 +83,24 @@ void loop() {
   if (Serial.available() > 0) {
     String str = Serial.readString();
     str.trim();
-
+    JsonDocument docReading;
+    DeserializationError error = deserializeJson(docReading, str);
+    if (error) {
+      Serial.print(F("deserializeJson() failed: "));
+      Serial.println(error.c_str());
+      return;
+    }
+    const char* messageType = docReading["messageType"];
+    Serial.println(messageType);
+    if (String(messageType) == "heatRelay") {
+      const bool value = docReading["value"];
+      Serial.println(String(value));
+    }
     if (str == "on") {
-      digitalWrite(50, HIGH);
+      digitalWrite(RELAY_PIN, HIGH);
     }
     if (str == "off") {
-      digitalWrite(50, LOW);
+      digitalWrite(RELAY_PIN, LOW);
     }
   }
 }
