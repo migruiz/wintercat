@@ -78,9 +78,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   payload[length] = 0;
   String recv_payload = String((char*)payload);
-  client.publish("WINTERCAT/CALLBACK", topic);
-  client.publish("WINTERCAT/CALLBACK",  recv_payload.c_str());
-  
+  Serial.println(recv_payload.c_str());
+  Serial1.println(recv_payload.c_str());
+  client.publish("WINTERCAT/Callback", topic);
+  client.publish("WINTERCAT/Callback", recv_payload.c_str());
 }
 
 void loop() {
