@@ -9,8 +9,8 @@
 #endif
 #include <PubSubClient.h>
 
-const char* ssid = "VM712429A";
-const char* password = "tBhj6Hxe7abj";
+const char* ssid = "PIAP";
+const char* password = "hackol37";
 const char* mqttServer = "192.168.0.11";
 const int mqttPort = 1883;
 const char* mqttUser = "";
