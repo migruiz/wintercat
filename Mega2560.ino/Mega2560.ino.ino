@@ -98,11 +98,18 @@ void loop() {
     const char* messageType = docReading["messageType"];
     if (String(messageType) == "heatRelay") {
       const bool value = docReading["value"];
+      JsonDocument actuatorDoc;
       if (value) {
         digitalWrite(RELAY_PIN, HIGH);
+        actuatorDoc["state"] = HIGH;
       } else {
         digitalWrite(RELAY_PIN, LOW);
+        actuatorDoc["state"] = LOW;
       }
+      actuatorDoc["messageType"] = "actuatorOK";
+      actuatorDoc["pin"] = RELAY_PIN;
+      serializeJson(actuatorDoc, Serial);
+      Serial.println();
     }
   }
 }
