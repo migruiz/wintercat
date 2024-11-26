@@ -95,12 +95,11 @@ void loop() {
     if (String(messageType) == "heatRelay") {
       const bool value = docReading["value"];
       Serial.println(String(value));
-    }
-    if (str == "on") {
-      digitalWrite(RELAY_PIN, HIGH);
-    }
-    if (str == "off") {
-      digitalWrite(RELAY_PIN, LOW);
+      if (value) {
+        digitalWrite(RELAY_PIN, HIGH);
+      } else {
+        digitalWrite(RELAY_PIN, LOW);
+      }
     }
   }
 }
