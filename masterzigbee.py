@@ -1,6 +1,7 @@
 from paho.mqtt import client as mqtt_client
 import random
 import sys
+import time
 
 broker = '192.168.0.11'
 port = 1883
@@ -24,9 +25,12 @@ client.subscribe(topic)
 
 try:
     print("Press CTRL+C to exit...")
-    client.loop_forever()
+    client.loop_start()
+    while True:
+        time.sleep(1)  # Keep the loop alive
 except Exception:
     print("Caught an Exception, something went wrong...")
 finally:
     print("Disconnecting from the MQTT broker")
+    client.loop_stop()
     client.disconnect()
