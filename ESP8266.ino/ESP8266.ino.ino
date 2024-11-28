@@ -66,20 +66,32 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(recv_payload.c_str());
 }
 
-void loop() {
+bool checkWifi() {
   if (WiFi.status() != WL_CONNECTED) {
     clearSerialBuffer();
     WIFI_Connect();
-    return;
+    return false;
   }
   if (!client.connected()) {
     clearSerialBuffer();
     WIFI_Connect();
+    return false;
+  }
+  return true;
+}
+
+void loop() {
+
+  if (!checkWifi()) {
     return;
   }
+
   if (Serial.available() > 0) {
     String str = Serial.readString();
     str.trim();
+    if (!checkWifi()) {
+      return;
+    }
     client.publish("WINTERCAT/readings", str.c_str());
   }
   client.loop();
