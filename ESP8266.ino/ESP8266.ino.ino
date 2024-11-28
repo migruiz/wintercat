@@ -59,7 +59,13 @@ void WIFI_Connect() {
 void setup() {
   Serial.begin(9600);
   Serial1.begin(115200);
+  clearSerialBuffer();
   WIFI_Connect();
+}
+
+void clearSerialBuffer() {
+  Serial.end();
+  Serial.begin(9600);
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -81,15 +87,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(recv_payload.c_str());
   Serial1.println(recv_payload.c_str());
   client.publish("WINTERCAT/Callback", topic);
+
   client.publish("WINTERCAT/Callback", recv_payload.c_str());
 }
 
 void loop() {
   if (WiFi.status() != WL_CONNECTED) {
+    clearSerialBuffer();
     WIFI_Connect();
     return;
   }
   if (!client.connected()) {
+    clearSerialBuffer();
     WIFI_Connect();
     return;
   }
