@@ -54,6 +54,9 @@ void setup() {
   Serial.println();
 }
 
+bool relayOn = false;
+unsigned long relayOnAtMillis = 0;
+unsigned long RELAY_ON_TIMEOUT_MS = 10000;
 
 void loop() {
   //------------------------------------------
@@ -80,6 +83,7 @@ void loop() {
       Serial.println();
     }
   }
+  unsigned long currentMillis = millis();
   if (Serial.available() > 0) {
     String str = Serial.readString();
     str.trim();
@@ -101,15 +105,29 @@ void loop() {
       JsonDocument actuatorDoc;
       if (value) {
         digitalWrite(RELAY_PIN, LOW);
-        actuatorDoc["state"] = LOW;
+        if (!relayOn) {
+          relayOnAtMillis = currentMillis;
+        }
+        relayOn = true;
       } else {
         digitalWrite(RELAY_PIN, HIGH);
-        actuatorDoc["state"] = HIGH;
+        relayOn = false;
       }
-      actuatorDoc["messageType"] = "actuatorOK";
-      actuatorDoc["pin"] = RELAY_PIN;
+      actuatorDoc["state"] = relayOn;
+      actuatorDoc["messageType"] = "relayChange";
       serializeJson(actuatorDoc, Serial);
       Serial.println();
     }
+  }
+
+  if (relayOn && currentMillis - relayOnAtMillis > RELAY_ON_TIMEOUT_MS) {
+    digitalWrite(RELAY_PIN, HIGH);
+    relayOn = false;
+    JsonDocument relayOnTimeoutDoc;
+    relayOnTimeoutDoc["messageType"] = "relayChange";
+    relayOnTimeoutDoc["timedOut"] = true;
+    relayOnTimeoutDoc["state"] = relayOn;
+    serializeJson(relayOnTimeoutDoc, Serial);
+    Serial.println();
   }
 }
