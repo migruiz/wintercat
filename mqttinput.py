@@ -44,11 +44,23 @@ def push_number_message(observer, scheduler):
         client.disconnect()
 
 # Create a reactive stream
-source = rx.create(push_number_message)
-result = source.pipe(ops.map(lambda x: x["msg"]))
+translation = rx.create(push_number_message)
+readingsSource = translation.pipe(ops.filter(lambda x: x["messageType"] == "number" or x["messageType"] == "letter" ),ops.share())
+
+#subscription = readingsSource.subscribe(lambda x: print("The element is {0}".format(x)))
+
+def calculateCurrent(acc,curr):
+    if curr["messageType"] == "number":
+        return {**acc, 'number': curr["value"]}
+    else:
+        return {**acc, 'letter': curr["value"]}
+
+comb1 = readingsSource.pipe(
+   ops.scan(calculateCurrent, {"number":0, "letter":''}))
+#subscription = comb1.subscribe(lambda x: print("The element is {0}".format(x)))
 
 # Subscribe to the stream
-subscription = result.subscribe(
+subscription = comb1.subscribe(
     lambda x: print(f"The element is {x}"),
     lambda e: print(f"Error: {e}"),
     lambda: print("Completed")
@@ -61,4 +73,4 @@ try:
 except KeyboardInterrupt:
     print("Stopping observer...")
     subscription.dispose()
-    source.dispose()
+    translation.dispose()
