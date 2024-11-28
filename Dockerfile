@@ -8,4 +8,4 @@ RUN cd /App && pip install -r requirements.txt
 COPY App /App
 
 
-CMD ["python", "/App/app.py"] 
+CMD ["python", "-u","/App/app.py"] 
