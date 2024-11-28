@@ -1,36 +1,80 @@
-from paho.mqtt import client as mqtt_client
 import random
 import sys
 import time
+from paho.mqtt import client as mqtt_client
+import reactivex as rx
 
+# MQTT Broker Config
 broker = '192.168.0.11'
 port = 1883
-topic = "zigbee2mqtt/0x94deb8fffe57b8ff" #"python/mqtt"
+topic = "zigbee2mqtt/0x94deb8fffe57b8ff"
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
-# username = 'emqx'
-# password = 'public'
 
-client = mqtt_client.Client()
+def mqtt_observable(broker, port, topic):
 
-def message_handling(client, userdata, msg):
-    print(f"{msg.topic}: {msg.payload.decode()}")
+    def observable(observer, _):
+        client = mqtt_client.Client()
 
-client.on_message = message_handling
+        def on_message(client, userdata, msg):
+            # Push received messages to the observer
+            observer.on_next((msg.topic, msg.payload.decode()))
 
-if client.connect(broker, port, 60) != 0:
-    print("Couldn't connect to the mqtt broker")
-    sys.exit(1)
+        def on_connect(client, userdata, flags, rc):
+            if rc == 0:
+                print("Connected to MQTT Broker!")
+            else:
+                observer.on_error(Exception(f"Failed to connect, return code {rc}"))
+        
+        def on_disconnect(client, userdata, rc):
+            if rc != 0:
+                print("Unexpected disconnection from MQTT broker")
 
-client.subscribe(topic)
+        # Set up MQTT callbacks
+        client.on_message = on_message
+        client.on_connect = on_connect
+        client.on_disconnect = on_disconnect
+
+        # Connect to the broker
+        try:
+            client.connect(broker, port, 60)
+        except Exception as e:
+            observer.on_error(e)
+            return
+        
+        # Subscribe to the topic
+        client.subscribe(topic)
+
+        # Start MQTT loop in a separate thread
+        client.loop_start()
+
+        def dispose():
+            print("Disposing MQTT observable...")
+            client.loop_stop()
+            client.disconnect()
+
+        # Return dispose method to clean up resources
+        return dispose
+
+    # Return the observable
+    return rx.create(observable)
+
+# Create the MQTT Observable
+mqtt_stream = mqtt_observable(broker, port, topic)
+
+# Subscribe to the observable
+subscription = mqtt_stream.subscribe(
+    on_next=lambda x: print(f"Received message: {x[0]}: {x[1]}"),
+    on_error=lambda e: print(f"Error occurred: {e}"),
+    on_completed=lambda: print("Stream completed!")
+)
 
 try:
+    # Keep the program running to receive messages
     print("Press CTRL+C to exit...")
-    client.loop_start()
     while True:
-        time.sleep(1)  # Keep the loop alive
-except Exception:
-    print("Caught an Exception, something went wrong...")
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Exiting...")
 finally:
-    print("Disconnecting from the MQTT broker")
-    client.loop_stop()
-    client.disconnect()
+    subscription.dispose()
+    print("Subscription disposed and program terminated.")
