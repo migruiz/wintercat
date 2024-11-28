@@ -56,7 +56,7 @@ void setup() {
 
 bool relayOn = false;
 unsigned long relayOnAtMillis = 0;
-unsigned long RELAY_ON_TIMEOUT_MS = 10000;
+unsigned long RELAY_ON_TIMEOUT_MS = 1 * 60 * 60 * 1000;
 
 void loop() {
   //------------------------------------------
