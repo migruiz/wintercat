@@ -1,4 +1,4 @@
-FROM python:3.14.0a2-alpine3.20 
+FROM balenalib/raspberry-pi-alpine-python:latest
 
 RUN mkdir /App/
 COPY App/requirements.txt  /App/requirements.txt
