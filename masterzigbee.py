@@ -1,6 +1,7 @@
 
 from paho.mqtt import client as mqtt_client
 import reactivex as rx
+import json
 
 def mqtt_observable():#(broker, port, topic):
     # MQTT Broker Config
@@ -14,7 +15,7 @@ def mqtt_observable():#(broker, port, topic):
 
         def on_message(client, userdata, msg):
             # Push received messages to the observer
-            observer.on_next((msg.topic, msg.payload.decode()))
+            observer.on_next(json.loads(msg.payload.decode()))
 
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
