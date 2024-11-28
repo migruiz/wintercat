@@ -25,29 +25,20 @@ int connectionTries = 0;
 void WIFI_Connect() {
   WiFi.disconnect();
   WiFi.begin(ssid, password);
-  Serial1.print("Wifi Status:");
-  Serial1.println(WiFi.status());
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial1.println("Connecting to WiFi..");
     connectionTries = connectionTries + 1;
     if (connectionTries > 20) {
       connectionTries = 0;
-      Serial1.println("aborting connection...");
       return;
     }
   }
-  Serial1.println("Connected to the WiFi network");
 
   client.setServer(mqttServer, mqttPort);
   client.setCallback(callback);
   while (!client.connected()) {
-    Serial1.println("Connecting to MQTT...");
     if (client.connect("WINTERCAT", mqttUser, mqttPassword)) {
-      Serial1.println("connected");
     } else {
-      Serial1.print("failed with state ");
-      Serial1.print(client.state());
       delay(2000);
     }
   }
@@ -57,8 +48,6 @@ void WIFI_Connect() {
 
 
 void setup() {
-  Serial.begin(9600);
-  Serial1.begin(115200);
   clearSerialBuffer();
   WIFI_Connect();
 }
@@ -72,23 +61,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 
 
-
-
-  Serial1.print("Message arrived in topic: ");
-  Serial1.println(topic);
-
-  Serial1.print("Message:");
-  for (int i = 0; i < length; i++) {
-    Serial1.print((char)payload[i]);
-  }
-
   payload[length] = 0;
   String recv_payload = String((char*)payload);
   Serial.println(recv_payload.c_str());
-  Serial1.println(recv_payload.c_str());
-  client.publish("WINTERCAT/Callback", topic);
-
-  client.publish("WINTERCAT/Callback", recv_payload.c_str());
 }
 
 void loop() {
@@ -105,7 +80,6 @@ void loop() {
   if (Serial.available() > 0) {
     String str = Serial.readString();
     str.trim();
-    Serial1.println(str);
     client.publish("WINTERCAT/readings", str.c_str());
   }
   client.loop();
