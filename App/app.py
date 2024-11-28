@@ -3,7 +3,7 @@ import time
 import reactivex as rx
 from reactivex import operators as ops
 
-timer_interval = 5
+timer_interval = 4
 
 # Create the MQTT Observable
 mqtt_stream = masterzigbee.mqtt_observable()
@@ -11,8 +11,22 @@ mqtt_stream = masterzigbee.mqtt_observable()
 # Filter MQTT stream
 filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
                                          ops.map(
-                                             lambda x: x["action"] == "brightness_move_up" or x["action"] == "on"),
-                                         ops.map(lambda x: {"type": "master", "state": x}))
+                                             lambda x: x["action"] == "brightness_move_up" or x["action"] == "on")
+                                         )
+
+
+def get_switching_obs():
+    return rx.interval(
+        timer_interval).pipe(ops.map(lambda x: True)
+                             , ops.start_with(True)
+                             , ops.scan(accumulator=lambda acc, curr: not acc, seed=False)
+                             )
+
+
+observablesStream = filtered_input_stream.pipe(
+    ops.map(lambda x: get_switching_obs() if x else rx.of(False)))
+
+swi = observablesStream.pipe(ops.switch_latest())
 
 timer = rx.interval(timer_interval).pipe(ops.map(lambda x: {"type": "timer"}))
 
@@ -39,7 +53,7 @@ comb1 = comb.pipe(
 # comb1.subscribe(lambda x: print("Master:{0} Heating:{1}".format(x["master"],x["heating"])))
 
 # Subscribe to the observable
-subscription = comb1.subscribe(
+subscription = swi.subscribe(
     on_next=lambda x: print(f"Received message: {x}"),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
