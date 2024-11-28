@@ -1,16 +1,13 @@
-import random
-import sys
-import time
+
 from paho.mqtt import client as mqtt_client
 import reactivex as rx
 
-# MQTT Broker Config
-broker = '192.168.0.11'
-port = 1883
-topic = "zigbee2mqtt/0x94deb8fffe57b8ff"
-client_id = f'python-mqtt-{random.randint(0, 1000)}'
-
-def mqtt_observable(broker, port, topic):
+def mqtt_observable():#(broker, port, topic):
+    # MQTT Broker Config
+    broker = '192.168.0.11'
+    port = 1883
+    topic = "zigbee2mqtt/0x04cd15fffe58b077"#"zigbee2mqtt/0x94deb8fffe57b8ff"
+    #client_id = f'python-mqtt-{random.randint(0, 1000)}'
 
     def observable(observer, _):
         client = mqtt_client.Client()
@@ -58,14 +55,16 @@ def mqtt_observable(broker, port, topic):
     # Return the observable
     return rx.create(observable)
 
+
+"""
 # Create the MQTT Observable
 mqtt_stream = mqtt_observable(broker, port, topic)
 
 # Subscribe to the observable
 subscription = mqtt_stream.subscribe(
-    on_next=lambda x: print(f"Received message: {x[0]}: {x[1]}"),
-    on_error=lambda e: print(f"Error occurred: {e}"),
-    on_completed=lambda: print("Stream completed!")
+    on_next = lambda x: print(f"Received message: {x[0]}: {x[1]}"),
+    on_error = lambda e: print(f"Error occurred: {e}"),
+    on_completed = lambda: print("Stream completed!")
 )
 
 try:
@@ -78,3 +77,5 @@ except KeyboardInterrupt:
 finally:
     subscription.dispose()
     print("Subscription disposed and program terminated.")
+
+"""
