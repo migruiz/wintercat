@@ -1,4 +1,11 @@
 FROM python:3.14.0a2-alpine3.20 
-ADD test2.py .
-RUN pip3 install reactivex paho-mqtt
-CMD ["python", "./test2.py"] 
+
+RUN mkdir /App/
+COPY App/requirements.txt  /App/requirements.txt
+
+RUN cd /App && pip install -r requirements.txt
+
+COPY App /App
+
+
+CMD ["python", "/App/app.py"] 
