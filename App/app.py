@@ -3,12 +3,13 @@ import time
 import reactivex as rx
 from reactivex import operators as ops
 from paho.mqtt import client as mqtt_client
+import json
 
-timer_interval = 4
+timer_interval = 1800 #30min
 # MQTT Broker Config
 broker = '192.168.0.11'
 port = 1883
-topic = "wintercat/test_tx"#"zigbee2mqtt/0x94deb8fffe57b8ff"
+topic = "WINTERCAT/operate"#"zigbee2mqtt/0x94deb8fffe57b8ff"
 #client_id = f'python-mqtt-{random.randint(0, 1000)}'
 
 
@@ -64,7 +65,7 @@ comb1 = comb.pipe(
 
 def publish(on_off_status):
     print(f"Received message: {on_off_status}")
-    mqtt_client.publish(topic, on_off_status)
+    mqtt_client.publish(topic, json.dumps({"messageType":"heatRelay","value":on_off_status}))
 
 # Subscribe to the observable
 subscription = swi.subscribe(
