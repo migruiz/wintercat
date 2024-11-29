@@ -3,42 +3,18 @@ from paho.mqtt import client as mqtt_client
 import reactivex as rx
 import json
 
-def mqtt_observable():#(broker, port, topic):
-    # MQTT Broker Config
-    broker = '192.168.0.11'
-    port = 1883
-    topic = "zigbee2mqtt/0x04cd15fffe58b077"#"zigbee2mqtt/0x94deb8fffe57b8ff"
-    #client_id = f'python-mqtt-{random.randint(0, 1000)}'
-
+def mqtt_observable(client):
+    
+    topic = "zigbee2mqtt/0x04cd15fffe58b077"
     def observable(observer, _):
-        client = mqtt_client.Client()
 
         def on_message(client, userdata, msg):
             # Push received messages to the observer
             observer.on_next(json.loads(msg.payload.decode()))
 
-        def on_connect(client, userdata, flags, rc):
-            if rc == 0:
-                print("Connected to MQTT Broker!")
-            else:
-                observer.on_error(Exception(f"Failed to connect, return code {rc}"))
-        
-        def on_disconnect(client, userdata, rc):
-            if rc != 0:
-                print("Unexpected disconnection from MQTT broker")
-
         # Set up MQTT callbacks
         client.on_message = on_message
-        client.on_connect = on_connect
-        client.on_disconnect = on_disconnect
 
-        # Connect to the broker
-        try:
-            client.connect(broker, port, 60)
-        except Exception as e:
-            observer.on_error(e)
-            return
-        
         # Subscribe to the topic
         client.subscribe(topic)
 
@@ -48,7 +24,6 @@ def mqtt_observable():#(broker, port, topic):
         def dispose():
             print("Disposing MQTT observable...")
             client.loop_stop()
-            client.disconnect()
 
         # Return dispose method to clean up resources
         return dispose

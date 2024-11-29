@@ -2,11 +2,22 @@ import masterzigbee
 import time
 import reactivex as rx
 from reactivex import operators as ops
+from paho.mqtt import client as mqtt_client
 
 timer_interval = 4
+# MQTT Broker Config
+broker = '192.168.0.11'
+port = 1883
+topic = "wintercat/test_tx"#"zigbee2mqtt/0x94deb8fffe57b8ff"
+#client_id = f'python-mqtt-{random.randint(0, 1000)}'
+
+
+# Create MQTT client
+mqtt_client = mqtt_client.Client() 
+mqtt_client.connect(broker, port, 60)
 
 # Create the MQTT Observable
-mqtt_stream = masterzigbee.mqtt_observable()
+mqtt_stream = masterzigbee.mqtt_observable(mqtt_client)
 
 # Filter MQTT stream
 filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
@@ -50,11 +61,14 @@ def buildCurrent(acc, curr):
 comb1 = comb.pipe(
     ops.scan(accumulator=buildCurrent, seed={"master": False, "heating": False}))
 
-# comb1.subscribe(lambda x: print("Master:{0} Heating:{1}".format(x["master"],x["heating"])))
+
+def publish(on_off_status):
+    print(f"Received message: {on_off_status}")
+    mqtt_client.publish(topic, on_off_status)
 
 # Subscribe to the observable
 subscription = swi.subscribe(
-    on_next=lambda x: print(f"Received message: {x}"),
+    on_next= lambda x: publish(x),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
 )
@@ -67,5 +81,6 @@ try:
 except KeyboardInterrupt:
     print("Exiting...")
 finally:
+    mqtt_client.disconnect()
     subscription.dispose()
     print("Subscription disposed and program terminated.")
