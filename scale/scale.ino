@@ -52,8 +52,8 @@ void setup() {
   //EEPROM.get(calVal_eepromAdress, calibrationValue); // uncomment this if you want to fetch the calibration value from eeprom
 
   //restore the zero offset value from eeprom:
-  long tare_offset = 0;
-  EEPROM.get(tareOffsetVal_eepromAdress, tare_offset);
+  long tare_offset = 8888954;
+  //EEPROM.get(tareOffsetVal_eepromAdress, tare_offset);
   LoadCell.setTareOffset(tare_offset);
   boolean _tare = false; //set this to false as the value has been resored from eeprom
 
@@ -71,7 +71,7 @@ void setup() {
 
 void loop() {
   static boolean newDataReady = 0;
-  const int serialPrintInterval = 250; //increase value to slow down serial print activity
+  const int serialPrintInterval = 3000; //increase value to slow down serial print activity
 
   // check for new data/start next conversion:
   if (LoadCell.update()) newDataReady = true;
