@@ -136,7 +136,7 @@ void loop()
 
       JsonDocument doc;
       doc["messageType"] = "scale";
-      doc["value"] = i
+      doc["value"] = i;
 
       char buffer[256];
       size_t n = serializeJson(doc, buffer);
