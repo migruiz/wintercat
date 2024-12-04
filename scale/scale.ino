@@ -1,7 +1,7 @@
 #if defined(ESP32)
 #include <analogWrite.h>
 #endif
-
+#include <ArduinoJson.h>
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #else
@@ -54,7 +54,6 @@ void WIFI_Connect()
   }
 
   client.setServer(mqttServer, mqttPort);
-  client.setCallback(callback);
   while (!client.connected())
   {
     if (client.connect("WINTERCATSCALE", mqttUser, mqttPassword))
@@ -134,7 +133,14 @@ void loop()
       {
         return;
       }
-      client.publish("WINTERCAT/scale/readings", "str.c_str()");
+
+      JsonDocument doc;
+      doc["messageType"] = "scale";
+      doc["value"] = i
+
+      char buffer[256];
+      size_t n = serializeJson(doc, buffer);
+      client.publish("WINTERCAT/readings", buffer, n);
 
       newDataReady = 0;
       t = millis();
