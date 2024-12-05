@@ -20,8 +20,8 @@ class InputObservable(rx.Observable):
 
 input_observable = InputObservable().pipe(ops.map(lambda x: {"type":"master", "state":x }))
 
-on_cron_observable = scheduler.cron_observable("14:00",True).pipe(ops.map(lambda x: {"type":"cron_on", "state":x }))
-off_cron_observable = scheduler.cron_observable("14:10",True).pipe(ops.map(lambda x: {"type":"cron_off", "state":x }))
+on_cron_observable = scheduler.cron_observable("11:31",True).pipe(ops.map(lambda x: {"type":"cron_on", "state":x }))
+off_cron_observable = scheduler.cron_observable("11:33",False).pipe(ops.map(lambda x: {"type":"cron_off", "state":x }))
 
 merged_cron_observable = rx.merge(on_cron_observable,off_cron_observable)
 
