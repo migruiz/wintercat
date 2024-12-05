@@ -1,0 +1,122 @@
+from dotenv import load_dotenv
+import masterzigbee
+import time
+import reactivex as rx
+from reactivex import operators as ops
+from paho.mqtt import client as mqtt_client
+import json
+import scheduler
+import scale
+import os
+
+load_dotenv("./.env")
+
+TEMP_SETTING = int(os.environ.get("TEMP_SETTING"))
+CRON_ON_TIME = os.environ.get("CRON_ON_TIME")
+CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME")
+SCALE_ENABLE = bool(os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1'))
+CRON_ENABLE= bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
+
+
+# MQTT Broker Config
+broker = '192.168.0.11'
+port = 1883
+topic = "WINTERCAT/outputmock"  # "WINTERCAT/operate"
+
+# Create MQTT client
+mqtt_client = mqtt_client.Client()
+mqtt_client.connect(broker, port, 60)
+
+# Create the master switch Observable
+mqtt_stream = masterzigbee.mqtt_observable(mqtt_client)
+
+# Filter master switch observable
+filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
+                                         ops.map(
+                                             lambda x: x["action"] == "brightness_move_up" or x["action"] == "on")
+                                         )
+
+# Input stream
+input_stream = filtered_input_stream.pipe(
+    ops.map(lambda x: {"type":"master", "value":x })
+)
+
+# Create cron observables
+on_cron_observable = scheduler.cron_observable(CRON_ON_TIME,True).pipe(ops.map(lambda x: {"type":"cron_on", "state":x }))
+off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME,False).pipe(ops.map(lambda x: {"type":"cron_off", "state":x }))
+
+def filter_cron(x):
+    if(CRON_ENABLE):
+        return x
+    
+# Merging cron observables
+merged_cron_observable = rx.merge(on_cron_observable,off_cron_observable).pipe( 
+    ops.filter(filter_cron)
+    )
+
+def buildCronInput(acc,curr):
+    return {**acc, 'Last': acc["New"], 'New': curr["state"]}
+
+# Cron stream
+cron_stream = merged_cron_observable.pipe(
+   ops.scan(buildCronInput, {"Last":False, "New":False}),
+   ops.map(lambda x : {"type": "cron","value": x["New"]})
+   )
+
+
+# Create scale observable
+scale_observable = scale.scale_observable()
+
+def filter_scale(x):
+    if(SCALE_ENABLE):
+        return x
+    
+scale_stream = scale_observable.pipe( 
+    ops.map(lambda x : {"type": "scale","value": True if x["value"] == "in" else False}), 
+    ops.filter(filter_scale))
+#subscription = scale_stream.subscribe(lambda x: print("Type:{0}".format(x)))
+
+
+final_observable = rx.merge(scale_stream, input_stream,cron_stream)
+
+#subscription = final_observable.subscribe(lambda x: print("Type:{0} Value:{1}".format(x["type"],x["value"])))
+
+
+def get_switching_obs():
+    return rx.interval(10 * 60).pipe(
+        ops.start_with(1),
+        ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 6 else 1, seed=0),
+        ops.map(lambda x: x <= TEMP_SETTING)
+         )
+
+
+observablesStream = final_observable.pipe(
+    ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)))
+
+swi = observablesStream.pipe(ops.switch_latest())
+
+
+def publish(on_off_status):
+    print(f"Received message: {on_off_status}")
+    mqtt_client.publish(topic, json.dumps(
+        {"messageType": "heatRelay", "value": on_off_status}))
+
+
+# Subscribe to the observable
+subscription = swi.subscribe(
+    on_next=lambda x: publish(x),
+    on_error=lambda e: print(f"Error occurred: {e}"),
+    on_completed=lambda: print("Stream completed!")
+)
+
+try:
+    # Keep the program running to receive messages
+    print("Press CTRL+C to exit...")
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Exiting...")
+finally:
+    mqtt_client.disconnect()
+    subscription.dispose()
+    print("Subscription disposed and program terminated.")
