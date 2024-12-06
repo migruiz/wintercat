@@ -50,8 +50,8 @@ def get_app_observable(client: mqtt_client.Client):
     )
 
 
-def publish(client:mqtt_client.Client, msg):    
-    client.publish("TESTTOPIC", json.dumps(
+def publish(client:mqtt_client.Client, msg):   
+    client.publish("WINTERCAT/operate", json.dumps(
         {"messageType": "heatRelay", "value": msg}))
     print(f"Relay set to : {msg}")
 
