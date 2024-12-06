@@ -3,9 +3,8 @@ from paho.mqtt import client as mqtt_client
 import reactivex as rx
 import json
 
-def scale_observable():
+def control_observable():
     client = mqtt_client.Client()
-    topic = "wintercat/scalemock2"
     broker = '192.168.0.11'
     port = 1883
     def observable(observer, _):
@@ -38,13 +37,13 @@ def scale_observable():
             return
         
         # Subscribe to the topic
-        client.subscribe(topic)
+        client.subscribe("zigbee2mqtt/0x04cd15fffe58b077")
 
         # Start MQTT loop in a separate thread
         client.loop_start()
 
         def dispose():
-            print("Disposing SCALE observable...")
+            print("Disposing CONTROL observable...")
             client.loop_stop()
             client.disconnect()
 

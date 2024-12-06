@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-import masterzigbee
+import control
 import time
 import reactivex as rx
 from reactivex import operators as ops
@@ -18,17 +18,9 @@ SCALE_ENABLE = bool(os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1'))
 CRON_ENABLE= bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
-# MQTT Broker Config
-broker = '192.168.0.11'
-port = 1883
-topic = "WINTERCAT/outputmock"  # "WINTERCAT/operate"
-
-# Create MQTT client
-mqtt_client = mqtt_client.Client()
-mqtt_client.connect(broker, port, 60)
 
 # Create the master switch Observable
-mqtt_stream = masterzigbee.mqtt_observable(mqtt_client)
+mqtt_stream = control.control_observable()
 
 # Filter master switch observable
 filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
@@ -77,7 +69,7 @@ scale_stream = scale_observable.pipe(
 #subscription = scale_stream.subscribe(lambda x: print("Type:{0}".format(x)))
 
 
-final_observable = rx.merge(scale_stream, input_stream,cron_stream)
+final_observable = rx.merge( input_stream, scale_stream, cron_stream)
 
 #subscription = final_observable.subscribe(lambda x: print("Type:{0} Value:{1}".format(x["type"],x["value"])))
 
@@ -98,8 +90,8 @@ swi = observablesStream.pipe(ops.switch_latest())
 
 def publish(on_off_status):
     print(f"Received message: {on_off_status}")
-    mqtt_client.publish(topic, json.dumps(
-        {"messageType": "heatRelay", "value": on_off_status}))
+    #mqtt_client.publish("WINTERCAT/test", json.dumps(
+   #     {"messageType": "heatRelay", "value": on_off_status}))
 
 
 # Subscribe to the observable
