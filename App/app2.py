@@ -12,9 +12,9 @@ import os
 
 load_dotenv()
 
-TEMP_SETTING = int(os.environ.get("TEMP_SETTING"))
-CRON_ON_TIME = os.environ.get("CRON_ON_TIME")
-CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME")
+TEMP_SETTING = int(os.environ.get("TEMP_SETTING") or 30) 
+CRON_ON_TIME = os.environ.get("CRON_ON_TIME") or "18:00"
+CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME") or "09:00"
 SCALE_ENABLE = bool(
     os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1'))
 CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
