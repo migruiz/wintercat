@@ -5,7 +5,7 @@ from reactivex import operators as ops
 import json
 
 
-def mqtt_client_observable():
+def get_mqtt_client_observable():
     client = mqtt_client.Client()
     broker = '192.168.0.11'
     port = 1883

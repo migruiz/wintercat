@@ -4,6 +4,7 @@ import time
 import reactivex as rx
 from reactivex import operators as ops
 from paho.mqtt import client as mqtt_client
+import mqttClientObservable
 import json
 import scheduler
 import scale
@@ -19,11 +20,7 @@ SCALE_ENABLE = bool(
 CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
-
-
-
-def get_app_observable(client:mqtt_client.Client):
-
+def get_app_observable(client: mqtt_client.Client):
 
     control_observable = control.control_observable(client)
 
@@ -33,15 +30,13 @@ def get_app_observable(client:mqtt_client.Client):
     scale_stream = scale.scale_observable(client).pipe(
         ops.filter(lambda _: SCALE_ENABLE))
 
-
     def get_switching_obs():
         return rx.interval(1 * 60).pipe(
             ops.start_with(1),
             ops.scan(accumulator=lambda acc, _: acc +
-                    1 if acc < 60 else 1, seed=0),
+                     1 if acc < 60 else 1, seed=0),
             ops.map(lambda x: x <= TEMP_SETTING)
         )
-
 
     return rx.merge(control_observable, scale_stream, cron_observable).pipe(
         ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
@@ -49,18 +44,22 @@ def get_app_observable(client:mqtt_client.Client):
     )
 
 
-def publish(on_off_status):
-    print(f"Received message: {on_off_status}")
-    
-subscription = get_app_observable().subscribe(
-    on_next=lambda x: publish(x),
+def publish(client:mqtt_client.Client, msg):
+    print(f"Received message: {msg}")
+
+
+obs = mqtt_client_observable = mqttClientObservable.get_mqtt_client_observable().pipe(
+    ops.flat_map(lambda c: get_app_observable(client=c).pipe(
+        ops.map(lambda msg: {"client": c, "msg": msg})
+    )),
+
+)
+
+subscription = obs.subscribe(
+    on_next=lambda e: publish(client=e["client"], msg=e["msg"]),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
 )
-
-
-
-
 
 
 try:
@@ -72,11 +71,5 @@ except KeyboardInterrupt:
     print("Exiting...")
 finally:
     subscription.dispose()
-   
+
     print("Subscription disposed and program terminated.")
-
-
-
-
-
-
