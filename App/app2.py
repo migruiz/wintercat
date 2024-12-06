@@ -46,6 +46,8 @@ def get_app_observable(client: mqtt_client.Client):
 
 def publish(client:mqtt_client.Client, msg):
     print(f"Received message: {msg}")
+    client.publish("TESTTOPIC", json.dumps(
+        {"messageType": "heatRelay", "value": msg}))
 
 
 obs = mqtt_client_observable = mqttClientObservable.get_mqtt_client_observable().pipe(
