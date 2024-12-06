@@ -17,7 +17,7 @@ CRON_ON_TIME = os.environ.get("CRON_ON_TIME") or "18:00"
 CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME") or "09:00"
 SCALE_ENABLE = bool(
     os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1')) or False
-CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1')) or True
+CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1')) 
 
 print(f'TEMP_SETTING {TEMP_SETTING}')
 print(f'CRON_ON_TIME {CRON_ON_TIME}')
