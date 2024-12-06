@@ -9,7 +9,7 @@ import scheduler
 import scale
 import os
 
-load_dotenv("./.env")
+load_dotenv()
 
 TEMP_SETTING = int(os.environ.get("TEMP_SETTING"))
 CRON_ON_TIME = os.environ.get("CRON_ON_TIME")
