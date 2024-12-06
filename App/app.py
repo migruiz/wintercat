@@ -5,7 +5,7 @@ from reactivex import operators as ops
 from paho.mqtt import client as mqtt_client
 import json
 
-temp_setting = 4
+temp_setting = 40
 # MQTT Broker Config
 broker = '192.168.0.11'
 port = 1883
@@ -28,9 +28,9 @@ filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "b
 
 
 def get_switching_obs():
-    return rx.interval(10 * 60).pipe(
+    return rx.interval(1 * 60).pipe(
         ops.start_with(1),
-        ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 6 else 1, seed=0),
+        ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 60 else 1, seed=0),
         ops.map(lambda x: x <= temp_setting)
          )
 
