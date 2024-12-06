@@ -4,11 +4,8 @@ import reactivex as rx
 from reactivex import operators as ops
 import json
 
-def scale_observable():
-    client = mqtt_client.Client()
-    topic = "wintercat/scalemock2"
-    broker = '192.168.0.11'
-    port = 1883
+def scale_observable(client:mqtt_client.Client):
+
     def observable(observer, _):
         
         def on_message(client, userdata, msg):

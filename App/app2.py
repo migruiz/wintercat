@@ -58,36 +58,9 @@ def get_mqtt_client():
 client  = get_mqtt_client()
 
 
-control_observable = control.control_observable(client=client)
-
-subscription = control_observable.subscribe(
-    on_next=lambda x: print(f"Emission: {x}"),
-    on_error=lambda e: print(f"Error occurred: {e}"),
-    on_completed=lambda: print("Stream completed!")
-)
 
 
-try:
-    # Keep the program running to receive messages
-    print("Press CTRL+C to exit...")
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("Exiting...")
-finally:
-    subscription.dispose()
-    client.loop_stop()
-    client.disconnect()
-    print("Subscription disposed and program terminated.")
-
-
-
-
-
-
-exit()
-
-control_observable = control.control_observable()
+control_observable = control.control_observable(client)
 
 cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
     ops.filter(lambda _: CRON_ENABLE))
@@ -124,6 +97,11 @@ subscription = observablesStream.subscribe(
     on_completed=lambda: print("Stream completed!")
 )
 
+
+
+
+
+
 try:
     # Keep the program running to receive messages
     print("Press CTRL+C to exit...")
@@ -132,6 +110,13 @@ try:
 except KeyboardInterrupt:
     print("Exiting...")
 finally:
-    mqtt_client.disconnect()
     subscription.dispose()
+    client.loop_stop()
+    client.disconnect()
     print("Subscription disposed and program terminated.")
+
+
+
+
+
+
