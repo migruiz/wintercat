@@ -57,41 +57,37 @@ def get_mqtt_client():
 
 client  = get_mqtt_client()
 
+def get_app_observable(client:mqtt_client.Client):
 
 
+    control_observable = control.control_observable(client)
 
-control_observable = control.control_observable(client)
+    cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
+        ops.filter(lambda _: CRON_ENABLE))
 
-cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
-    ops.filter(lambda _: CRON_ENABLE))
-
-scale_stream = scale.scale_observable(client).pipe(
-    ops.filter(lambda _: SCALE_ENABLE))
+    scale_stream = scale.scale_observable(client).pipe(
+        ops.filter(lambda _: SCALE_ENABLE))
 
 
-def get_switching_obs():
-    return rx.interval(1 * 60).pipe(
-        ops.start_with(1),
-        ops.scan(accumulator=lambda acc, _: acc +
-                 1 if acc < 60 else 1, seed=0),
-        ops.map(lambda x: x <= TEMP_SETTING)
+    def get_switching_obs():
+        return rx.interval(1 * 60).pipe(
+            ops.start_with(1),
+            ops.scan(accumulator=lambda acc, _: acc +
+                    1 if acc < 60 else 1, seed=0),
+            ops.map(lambda x: x <= TEMP_SETTING)
+        )
+
+
+    return rx.merge(control_observable, scale_stream, cron_observable).pipe(
+        ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
+        ops.switch_latest()
     )
-
-
-observablesStream = rx.merge(control_observable, scale_stream, cron_observable).pipe(
-    ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
-    ops.switch_latest()
-)
 
 
 def publish(on_off_status):
     print(f"Received message: {on_off_status}")
-    # mqtt_client.publish("WINTERCAT/test", json.dumps(
-   #     {"messageType": "heatRelay", "value": on_off_status}))
-
-
-# Subscribe to the observable
-subscription = observablesStream.subscribe(
+    
+subscription = get_app_observable(client).subscribe(
     on_next=lambda x: publish(x),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
