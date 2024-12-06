@@ -58,7 +58,13 @@ def get_mqtt_client():
 client  = get_mqtt_client()
 
 
+control_observable = control.control_observable(client=client)
 
+subscription = control_observable.subscribe(
+    on_next=lambda x: print(f"Emission: {x}"),
+    on_error=lambda e: print(f"Error occurred: {e}"),
+    on_completed=lambda: print("Stream completed!")
+)
 
 
 try:
@@ -69,6 +75,7 @@ try:
 except KeyboardInterrupt:
     print("Exiting...")
 finally:
+    subscription.dispose()
     client.loop_stop()
     client.disconnect()
     print("Subscription disposed and program terminated.")
