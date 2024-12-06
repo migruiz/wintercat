@@ -6,25 +6,23 @@ import json
 
 
 def control_observable(client:mqtt_client.Client):
-
+    CONTROL_TOPIC ="zigbee2mqtt/0x04cd15fffe58b077"
     def observable(observer, _):
 
         def on_message(client, userdata, msg):
             # Push received messages to the observer
             observer.on_next(json.loads(msg.payload.decode()))
 
+        client.subscribe(topic=CONTROL_TOPIC)
+        client.message_callback_add(sub=CONTROL_TOPIC, callback=on_message)
 
 
-        # Set up MQTT callbacks
-        client.on_message = on_message
-
-
-        # Subscribe to the topic
-        client.subscribe("zigbee2mqtt/0x04cd15fffe58b077")
-
+       
 
 
         def dispose():
+            client.unsubscribe(topic=CONTROL_TOPIC)
+            client.message_callback_remove(sub=CONTROL_TOPIC)
             print("Disposing CONTROL observable...")
 
 
