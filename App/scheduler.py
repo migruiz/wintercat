@@ -46,10 +46,10 @@ def create_cron_observable(execTime):
 
 
 def cron_observable(onTime, offTime):
-    on_cron_observable = create_cron_observable(onTime).pipe(
-        ops.map(lambda x: {"type": "cron", "value": True})
+    on_cron_observable = create_cron_observable(
+        onTime).pipe(ops.map(lambda _: True))
+    off_cron_observable = create_cron_observable(
+        offTime).pipe(ops.map(lambda _: False))
+    return rx.merge(on_cron_observable, off_cron_observable).pipe(
+        ops.map(lambda x: {"type": "cron", "value": x})
     )
-    off_cron_observable = create_cron_observable(offTime).pipe(
-        ops.map(lambda x: {"type": "cron", "value": False})
-    )
-    return rx.merge(on_cron_observable, off_cron_observable)
