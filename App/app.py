@@ -1,58 +1,74 @@
-import masterzigbee
+from dotenv import load_dotenv
+import control
 import time
 import reactivex as rx
 from reactivex import operators as ops
 from paho.mqtt import client as mqtt_client
+import mqttClientObservable
 import json
+import scheduler
+import scale
+import os
 
-temp_setting = 4
-# MQTT Broker Config
-broker = '192.168.0.11'
-port = 1883
-topic = "WINTERCAT/operate"  # "zigbee2mqtt/0x94deb8fffe57b8ff"
-# client_id = f'python-mqtt-{random.randint(0, 1000)}'
+load_dotenv()
+
+TEMP_SETTING = int(os.environ.get("TEMP_SETTING") or 30) 
+CRON_ON_TIME = os.environ.get("CRON_ON_TIME") or "18:00"
+CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME") or "09:00"
+SCALE_ENABLE = bool(
+    os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1')) or False
+CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1')) 
+
+print(f'TEMP_SETTING {TEMP_SETTING}')
+print(f'CRON_ON_TIME {CRON_ON_TIME}')
+print(f'CRON_OFF_TIME {CRON_OFF_TIME}')
+print(f'SCALE_ENABLE {SCALE_ENABLE}')
+print(f'CRON_ENABLE {CRON_ENABLE}')
+
+def get_app_observable(client: mqtt_client.Client):
+
+    control_observable = control.control_observable(client)
+
+    cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
+        ops.filter(lambda _: CRON_ENABLE))
+
+    scale_stream = scale.scale_observable(client).pipe(
+        ops.filter(lambda _: SCALE_ENABLE))
+
+    def get_switching_obs():
+        return rx.interval(1 * 60).pipe(
+            ops.start_with(1),
+            ops.scan(accumulator=lambda acc, _: acc +
+                     1 if acc < 60 else 1, seed=0),
+            ops.map(lambda x: x <= TEMP_SETTING)
+        )
+
+    return rx.merge(control_observable, scale_stream, cron_observable).pipe(
+        ops.do_action(lambda x: print(x)),
+        ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
+        ops.switch_latest()
+    )
 
 
-# Create MQTT client
-mqtt_client = mqtt_client.Client()
-mqtt_client.connect(broker, port, 60)
-
-# Create the MQTT Observable
-mqtt_stream = masterzigbee.mqtt_observable(mqtt_client)
-
-# Filter MQTT stream
-filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
-                                         ops.map(
-                                             lambda x: x["action"] == "brightness_move_up" or x["action"] == "on")
-                                         )
+def publish(client:mqtt_client.Client, msg):   
+    client.publish("WINTERCAT/operate", json.dumps(
+        {"messageType": "heatRelay", "value": msg}))
+    print(f"Relay set to : {msg}")
 
 
-def get_switching_obs():
-    return rx.interval(10 * 60).pipe(
-        ops.start_with(1),
-        ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 6 else 1, seed=0),
-        ops.map(lambda x: x <= temp_setting)
-         )
+obs = mqtt_client_observable = mqttClientObservable.get_mqtt_client_observable().pipe(
+    ops.flat_map(lambda c: get_app_observable(client=c).pipe(
+        ops.map(lambda msg: {"client": c, "msg": msg})
+    )),
 
+)
 
-observablesStream = filtered_input_stream.pipe(
-    ops.map(lambda x: get_switching_obs() if x else rx.of(False)))
-
-swi = observablesStream.pipe(ops.switch_latest())
-
-
-def publish(on_off_status):
-    print(f"Received message: {on_off_status}")
-    mqtt_client.publish(topic, json.dumps(
-        {"messageType": "heatRelay", "value": on_off_status}))
-
-
-# Subscribe to the observable
-subscription = swi.subscribe(
-    on_next=lambda x: publish(x),
+subscription = obs.subscribe(
+    on_next=lambda e: publish(client=e["client"], msg=e["msg"]),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
 )
+
 
 try:
     # Keep the program running to receive messages
@@ -62,6 +78,6 @@ try:
 except KeyboardInterrupt:
     print("Exiting...")
 finally:
-    mqtt_client.disconnect()
     subscription.dispose()
+
     print("Subscription disposed and program terminated.")
