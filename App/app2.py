@@ -23,20 +23,11 @@ CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 control_observable = control.control_observable()
 
 # Create cron observables
-on_cron_observable = scheduler.cron_observable(CRON_ON_TIME).pipe(
-    ops.map(lambda x: {"type": "cron", "value": True}))
-off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME).pipe(
-    ops.map(lambda x: {"type": "cron", "value": False}))
-
-
-def filter_cron(x):
-    if (CRON_ENABLE):
-        return x
-
-
-# Merging cron observables
-cron_observable = rx.merge(on_cron_observable, off_cron_observable).pipe(
+cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
     ops.filter(lambda _: CRON_ENABLE))
+
+
+
 
 
 scale_stream = scale.scale_observable().pipe(

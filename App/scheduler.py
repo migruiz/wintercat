@@ -2,6 +2,7 @@ import threading
 import time
 import reactivex as rx
 import schedule
+from reactivex import operators as ops
 
 
 def run_continuously(interval=1):
@@ -19,10 +20,10 @@ def run_continuously(interval=1):
     return cease_continuous_run
 
 
-def cron_observable(execTime):
+def create_cron_observable(execTime):
 
     booking = schedule.every().day.at(execTime)
-   
+
     def observable(observer, _):
         def job():
             observer.on_next(1)
@@ -43,27 +44,12 @@ def cron_observable(execTime):
     # Return the observable
     return rx.create(observable)
 
-"""try:
-    # Create the CRON Observable
-    cron_stream = cron_observable()
 
-
-    # Subscribe to the observable
-    subscription = cron_stream.subscribe(
-        on_next=lambda x: print(f"Received message: {x}"),
-        on_error=lambda e: print(f"Error occurred: {e}"),
-        on_completed=lambda: print("Stream completed!")
+def cron_observable(onTime, offTime):
+    on_cron_observable = create_cron_observable(onTime).pipe(
+        ops.map(lambda x: {"type": "cron", "value": True})
     )
-    # Keep the program running to receive messages
-    print("Press CTRL+C to exit...")
-
-    while True:
-        time.sleep(1)  # Keep the loop alive
-except Exception:
-    print("Caught an Exception, something went wrong...")
-    time.sleep(1)
-except KeyboardInterrupt:
-    print("Exiting...")
-finally:
-    subscription.dispose()
-    print("Subscription disposed and program terminated.")"""
+    off_cron_observable = create_cron_observable(offTime).pipe(
+        ops.map(lambda x: {"type": "cron", "value": False})
+    )
+    return rx.merge(on_cron_observable, off_cron_observable)
