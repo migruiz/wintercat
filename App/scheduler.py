@@ -19,13 +19,13 @@ def run_continuously(interval=1):
     return cease_continuous_run
 
 
-def cron_observable(execTime,outValue):
+def cron_observable(execTime):
 
     booking = schedule.every().day.at(execTime)
    
     def observable(observer, _):
         def job():
-            observer.on_next(outValue)
+            observer.on_next(1)
 
         stop_run_continuously = run_continuously()
         booking.do(job)

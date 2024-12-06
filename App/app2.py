@@ -34,26 +34,17 @@ input_stream = filtered_input_stream.pipe(
 )
 
 # Create cron observables
-on_cron_observable = scheduler.cron_observable(CRON_ON_TIME,True).pipe(ops.map(lambda x: {"type":"cron_on", "state":x }))
-off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME,False).pipe(ops.map(lambda x: {"type":"cron_off", "state":x }))
+on_cron_observable = scheduler.cron_observable(CRON_ON_TIME).pipe(ops.map(lambda x: {"type":"cron", "value":True }))
+off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME).pipe(ops.map(lambda x: {"type":"cron", "value":False }))
 
 def filter_cron(x):
     if(CRON_ENABLE):
         return x
     
 # Merging cron observables
-merged_cron_observable = rx.merge(on_cron_observable,off_cron_observable).pipe( 
+cron_observable = rx.merge(on_cron_observable,off_cron_observable).pipe( 
     ops.filter(filter_cron)
     )
-
-def buildCronInput(acc,curr):
-    return {**acc, 'Last': acc["New"], 'New': curr["state"]}
-
-# Cron stream
-cron_stream = merged_cron_observable.pipe(
-   ops.scan(buildCronInput, {"Last":False, "New":False}),
-   ops.map(lambda x : {"type": "cron","value": x["New"]})
-   )
 
 
 # Create scale observable
@@ -69,7 +60,7 @@ scale_stream = scale_observable.pipe(
 #subscription = scale_stream.subscribe(lambda x: print("Type:{0}".format(x)))
 
 
-final_observable = rx.merge( input_stream, scale_stream, cron_stream)
+final_observable = rx.merge( input_stream, scale_stream, cron_observable)
 
 #subscription = final_observable.subscribe(lambda x: print("Type:{0} Value:{1}".format(x["type"],x["value"])))
 
