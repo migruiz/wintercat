@@ -20,16 +20,16 @@ CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
 # Create the master switch Observable
-mqtt_stream = control.control_observable()
+control_observable = control.control_observable()
 
 # Filter master switch observable
-filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
+filtered_control_observable = control_observable.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
                                          ops.map(
                                              lambda x: x["action"] == "brightness_move_up" or x["action"] == "on")
                                          )
 
 # Input stream
-input_stream = filtered_input_stream.pipe(
+input_control_stream = filtered_control_observable.pipe(
     ops.map(lambda x: {"type": "master", "value": x})
 )
 
@@ -55,7 +55,7 @@ scale_stream = scale.scale_observable().pipe(
     ops.filter(lambda _: SCALE_ENABLE))
 
 
-final_observable = rx.merge(input_stream, scale_stream, cron_observable)
+final_observable = rx.merge(input_control_stream, scale_stream, cron_observable)
 
 
 def get_switching_obs():
