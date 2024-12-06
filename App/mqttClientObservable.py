@@ -5,7 +5,7 @@ from reactivex import operators as ops
 import json
 
 
-def mqtt_observable( topic: str):
+def mqtt_client_observable():
     client = mqtt_client.Client()
     broker = '192.168.0.11'
     port = 1883
@@ -14,6 +14,7 @@ def mqtt_observable( topic: str):
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
                 print("Connected to MQTT Broker!")
+                observer.on_next(client)
             else:
                 print(f"Failed to connect, return code {rc}")
 
@@ -21,9 +22,7 @@ def mqtt_observable( topic: str):
             if rc != 0:
                 print("Unexpected disconnection from MQTT broker")
 
-        def on_message(client, userdata, msg):
-            # Push received messages to the observer
-            observer.on_next(msg.payload.decode())
+        
         client.on_connect = on_connect
         client.on_disconnect = on_disconnect
 
@@ -32,15 +31,11 @@ def mqtt_observable( topic: str):
 
     # Start MQTT loop in a separate thread
         client.loop_start()
-        client.subscribe(topic=topic)
-        client.message_callback_add(sub=topic, callback=on_message)
 
         def dispose():
-            client.unsubscribe(topic=topic)
-            client.message_callback_remove(sub=topic)
             client.loop_stop()
             client.disconnect()
-            print("Disposing mqtt observable...")
+            print("Disposing mqtt Client observable...")
 
         return dispose
 

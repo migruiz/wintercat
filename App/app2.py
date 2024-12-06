@@ -22,15 +22,15 @@ CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
 
-def get_app_observable():
+def get_app_observable(client:mqtt_client.Client):
 
 
-    control_observable = control.control_observable()
+    control_observable = control.control_observable(client)
 
     cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
         ops.filter(lambda _: CRON_ENABLE))
 
-    scale_stream = scale.scale_observable().pipe(
+    scale_stream = scale.scale_observable(client).pipe(
         ops.filter(lambda _: SCALE_ENABLE))
 
 

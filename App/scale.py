@@ -1,14 +1,14 @@
 
 from paho.mqtt import client as mqtt_client
 import reactivex as rx
-import mqttObservable
+import mqttTopicObservable
 from reactivex import operators as ops
 import json
 
-def scale_observable():
+def scale_observable(client:mqtt_client.Client):
 
     SCALE_TOPIC ="WINTERCAT/house/presence"
-    return mqttObservable.mqtt_observable(topic=SCALE_TOPIC).pipe(
+    return mqttTopicObservable.mqtt_observable(client=client, topic=SCALE_TOPIC).pipe(
         ops.map(lambda x: x == "ON"),
         ops.map(lambda x: {"type": "scale", "value": x})
     )
