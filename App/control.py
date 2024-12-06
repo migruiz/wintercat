@@ -6,9 +6,9 @@ from reactivex import operators as ops
 import json
 
 
-def control_observable(client:mqtt_client.Client):
+def control_observable():
     CONTROL_TOPIC ="zigbee2mqtt/0x04cd15fffe58b077"
-    return mqttObservable.mqtt_observable(client=client, topic=CONTROL_TOPIC).pipe(
+    return mqttObservable.mqtt_observable(topic=CONTROL_TOPIC).pipe(
         ops.map(lambda x: json.loads(x)),
         ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] ==
                    "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),

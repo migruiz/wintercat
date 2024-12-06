@@ -5,10 +5,10 @@ import mqttObservable
 from reactivex import operators as ops
 import json
 
-def scale_observable(client:mqtt_client.Client):
+def scale_observable():
 
     SCALE_TOPIC ="WINTERCAT/house/presence"
-    return mqttObservable.mqtt_observable(client=client, topic=SCALE_TOPIC).pipe(
+    return mqttObservable.mqtt_observable(topic=SCALE_TOPIC).pipe(
         ops.map(lambda x: x == "ON"),
         ops.map(lambda x: {"type": "scale", "value": x})
     )

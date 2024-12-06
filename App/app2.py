@@ -22,50 +22,15 @@ CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
 
+def get_app_observable():
 
 
-
-def get_mqtt_client():
-    client = mqtt_client.Client()
-    broker = '192.168.0.11'
-    port = 1883
-
-    def on_connect(client, userdata, flags, rc):
-            if rc == 0:
-                print("Connected to MQTT Broker!")
-            else:
-                    print(f"Failed to connect, return code {rc}")
-
-    def on_disconnect(client, userdata, rc):
-            if rc != 0:
-                print("Unexpected disconnection from MQTT broker")
-
-
-    client.on_connect = on_connect
-    client.on_disconnect = on_disconnect
-
-    client.connect(broker, port, 60)
-
-
-    # Start MQTT loop in a separate thread
-    client.loop_start()
-    return client
-
-
-
-
-
-client  = get_mqtt_client()
-
-def get_app_observable(client:mqtt_client.Client):
-
-
-    control_observable = control.control_observable(client)
+    control_observable = control.control_observable()
 
     cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
         ops.filter(lambda _: CRON_ENABLE))
 
-    scale_stream = scale.scale_observable(client).pipe(
+    scale_stream = scale.scale_observable().pipe(
         ops.filter(lambda _: SCALE_ENABLE))
 
 
@@ -87,7 +52,7 @@ def get_app_observable(client:mqtt_client.Client):
 def publish(on_off_status):
     print(f"Received message: {on_off_status}")
     
-subscription = get_app_observable(client).subscribe(
+subscription = get_app_observable().subscribe(
     on_next=lambda x: publish(x),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")
@@ -107,8 +72,7 @@ except KeyboardInterrupt:
     print("Exiting...")
 finally:
     subscription.dispose()
-    client.loop_stop()
-    client.disconnect()
+   
     print("Subscription disposed and program terminated.")
 
 
