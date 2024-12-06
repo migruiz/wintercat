@@ -22,17 +22,6 @@ CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 # Create the master switch Observable
 control_observable = control.control_observable()
 
-# Filter master switch observable
-filtered_control_observable = control_observable.pipe(ops.filter(lambda x: (x["action"] == "brightness_move_up" or x["action"] == "on" or x["action"] == "brightness_move_down" or x["action"] == "off")),
-                                         ops.map(
-                                             lambda x: x["action"] == "brightness_move_up" or x["action"] == "on")
-                                         )
-
-# Input stream
-input_control_stream = filtered_control_observable.pipe(
-    ops.map(lambda x: {"type": "master", "value": x})
-)
-
 # Create cron observables
 on_cron_observable = scheduler.cron_observable(CRON_ON_TIME).pipe(
     ops.map(lambda x: {"type": "cron", "value": True}))
@@ -55,7 +44,7 @@ scale_stream = scale.scale_observable().pipe(
     ops.filter(lambda _: SCALE_ENABLE))
 
 
-final_observable = rx.merge(input_control_stream, scale_stream, cron_observable)
+final_observable = rx.merge(control_observable, scale_stream, cron_observable)
 
 
 def get_switching_obs():
