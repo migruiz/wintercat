@@ -7,9 +7,10 @@ import json
 
 def scale_observable(client:mqtt_client.Client):
 
-    SCALE_TOPIC ="WINTERCAT/house/presence"
+    SCALE_TOPIC ="WINTERCAT/house/presence2"
     return mqttTopicObservable.mqtt_observable(client=client, topic=SCALE_TOPIC).pipe(
         ops.map(lambda x: x == "ON"),
+        ops.distinct_until_changed(),
         ops.map(lambda x: {"type": "scale", "value": x})
     )
 
