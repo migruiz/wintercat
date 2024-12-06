@@ -10,7 +10,7 @@ def mqtt_observable(client:mqtt_client.Client, topic:str):
 
         def on_message(client, userdata, msg):
             # Push received messages to the observer
-            observer.on_next(json.loads(msg.payload.decode()))
+            observer.on_next(msg.payload.decode())
 
         client.subscribe(topic=topic)
         client.message_callback_add(sub=topic, callback=on_message)
