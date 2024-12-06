@@ -19,37 +19,28 @@ SCALE_ENABLE = bool(
 CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
-# Create the master switch Observable
 control_observable = control.control_observable()
 
-# Create cron observables
 cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
     ops.filter(lambda _: CRON_ENABLE))
 
-
-
-
-
 scale_stream = scale.scale_observable().pipe(
-    ops.map(lambda x: {"type": "scale", "value": x["value"] == "in"}),
     ops.filter(lambda _: SCALE_ENABLE))
 
 
-final_observable = rx.merge(control_observable, scale_stream, cron_observable)
-
-
 def get_switching_obs():
-    return rx.interval(10 * 60).pipe(
+    return rx.interval(1 * 60).pipe(
         ops.start_with(1),
-        ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 6 else 1, seed=0),
+        ops.scan(accumulator=lambda acc, _: acc +
+                 1 if acc < 60 else 1, seed=0),
         ops.map(lambda x: x <= TEMP_SETTING)
     )
 
 
-observablesStream = final_observable.pipe(
-    ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)))
-
-swi = observablesStream.pipe(ops.switch_latest())
+observablesStream = rx.merge(control_observable, scale_stream, cron_observable).pipe(
+    ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
+    ops.switch_latest()
+)
 
 
 def publish(on_off_status):
@@ -59,7 +50,7 @@ def publish(on_off_status):
 
 
 # Subscribe to the observable
-subscription = swi.subscribe(
+subscription = observablesStream.subscribe(
     on_next=lambda x: publish(x),
     on_error=lambda e: print(f"Error occurred: {e}"),
     on_completed=lambda: print("Stream completed!")

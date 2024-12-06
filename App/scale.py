@@ -1,6 +1,7 @@
 
 from paho.mqtt import client as mqtt_client
 import reactivex as rx
+from reactivex import operators as ops
 import json
 
 def scale_observable():
@@ -52,29 +53,7 @@ def scale_observable():
         return dispose
 
     # Return the observable
-    return rx.create(observable)
+    return rx.create(observable).pipe(
+        ops.map(lambda x: {"type": "scale", "value": x["value"] == "in"})
+    )
 
-
-"""
-# Create the MQTT Observable
-mqtt_stream = mqtt_observable(broker, port, topic)
-
-# Subscribe to the observable
-subscription = mqtt_stream.subscribe(
-    on_next = lambda x: print(f"Received message: {x[0]}: {x[1]}"),
-    on_error = lambda e: print(f"Error occurred: {e}"),
-    on_completed = lambda: print("Stream completed!")
-)
-
-try:
-    # Keep the program running to receive messages
-    print("Press CTRL+C to exit...")
-    while True:
-        time.sleep(1)
-except KeyboardInterrupt:
-    print("Exiting...")
-finally:
-    subscription.dispose()
-    print("Subscription disposed and program terminated.")
-
-"""
