@@ -19,6 +19,67 @@ SCALE_ENABLE = bool(
 CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
+
+
+
+
+
+
+def get_mqtt_client():
+    client = mqtt_client.Client()
+    broker = '192.168.0.11'
+    port = 1883
+
+    def on_connect(client, userdata, flags, rc):
+            if rc == 0:
+                print("Connected to MQTT Broker!")
+            else:
+                    print(f"Failed to connect, return code {rc}")
+
+    def on_disconnect(client, userdata, rc):
+            if rc != 0:
+                print("Unexpected disconnection from MQTT broker")
+
+
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
+
+    client.connect(broker, port, 60)
+
+
+    # Start MQTT loop in a separate thread
+    client.loop_start()
+    return client
+
+
+
+
+
+client  = get_mqtt_client()
+
+
+
+
+
+try:
+    # Keep the program running to receive messages
+    print("Press CTRL+C to exit...")
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    print("Exiting...")
+finally:
+    client.loop_stop()
+    client.disconnect()
+    print("Subscription disposed and program terminated.")
+
+
+
+
+
+
+exit()
+
 control_observable = control.control_observable()
 
 cron_observable = scheduler.cron_observable(onTime=CRON_ON_TIME, offTime=CRON_OFF_TIME).pipe(
