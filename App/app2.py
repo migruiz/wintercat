@@ -44,15 +44,16 @@ def get_app_observable(client: mqtt_client.Client):
         )
 
     return rx.merge(control_observable, scale_stream, cron_observable).pipe(
+        ops.do_action(lambda x: print(x)),
         ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
         ops.switch_latest()
     )
 
 
-def publish(client:mqtt_client.Client, msg):
-    print(f"Received message: {msg}")
+def publish(client:mqtt_client.Client, msg):    
     client.publish("TESTTOPIC", json.dumps(
         {"messageType": "heatRelay", "value": msg}))
+    print(f"Relay set to : {msg}")
 
 
 obs = mqtt_client_observable = mqttClientObservable.get_mqtt_client_observable().pipe(
