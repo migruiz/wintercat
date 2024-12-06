@@ -14,9 +14,9 @@ load_dotenv()
 TEMP_SETTING = int(os.environ.get("TEMP_SETTING"))
 CRON_ON_TIME = os.environ.get("CRON_ON_TIME")
 CRON_OFF_TIME = os.environ.get("CRON_OFF_TIME")
-SCALE_ENABLE = bool(os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1'))
-CRON_ENABLE= bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
-
+SCALE_ENABLE = bool(
+    os.getenv("SCALE_ENABLE", 'False').lower() in ('true', '1'))
+CRON_ENABLE = bool(os.getenv("CRON_ENABLE", 'False').lower() in ('true', '1'))
 
 
 # Create the master switch Observable
@@ -30,39 +30,32 @@ filtered_input_stream = mqtt_stream.pipe(ops.filter(lambda x: (x["action"] == "b
 
 # Input stream
 input_stream = filtered_input_stream.pipe(
-    ops.map(lambda x: {"type":"master", "value":x })
+    ops.map(lambda x: {"type": "master", "value": x})
 )
 
 # Create cron observables
-on_cron_observable = scheduler.cron_observable(CRON_ON_TIME).pipe(ops.map(lambda x: {"type":"cron", "value":True }))
-off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME).pipe(ops.map(lambda x: {"type":"cron", "value":False }))
+on_cron_observable = scheduler.cron_observable(CRON_ON_TIME).pipe(
+    ops.map(lambda x: {"type": "cron", "value": True}))
+off_cron_observable = scheduler.cron_observable(CRON_OFF_TIME).pipe(
+    ops.map(lambda x: {"type": "cron", "value": False}))
+
 
 def filter_cron(x):
-    if(CRON_ENABLE):
+    if (CRON_ENABLE):
         return x
-    
+
+
 # Merging cron observables
-cron_observable = rx.merge(on_cron_observable,off_cron_observable).pipe( 
-    ops.filter(filter_cron)
-    )
+cron_observable = rx.merge(on_cron_observable, off_cron_observable).pipe(
+    ops.filter(lambda _: CRON_ENABLE))
 
 
-# Create scale observable
-scale_observable = scale.scale_observable()
-
-def filter_scale(x):
-    if(SCALE_ENABLE):
-        return x
-    
-scale_stream = scale_observable.pipe( 
-    ops.map(lambda x : {"type": "scale","value": True if x["value"] == "in" else False}), 
-    ops.filter(filter_scale))
-#subscription = scale_stream.subscribe(lambda x: print("Type:{0}".format(x)))
+scale_stream = scale.scale_observable().pipe(
+    ops.map(lambda x: {"type": "scale", "value": x["value"] == "in"}),
+    ops.filter(lambda _: SCALE_ENABLE))
 
 
-final_observable = rx.merge( input_stream, scale_stream, cron_observable)
-
-#subscription = final_observable.subscribe(lambda x: print("Type:{0} Value:{1}".format(x["type"],x["value"])))
+final_observable = rx.merge(input_stream, scale_stream, cron_observable)
 
 
 def get_switching_obs():
@@ -70,7 +63,7 @@ def get_switching_obs():
         ops.start_with(1),
         ops.scan(accumulator=lambda acc, _: acc + 1 if acc < 6 else 1, seed=0),
         ops.map(lambda x: x <= TEMP_SETTING)
-         )
+    )
 
 
 observablesStream = final_observable.pipe(
@@ -81,7 +74,7 @@ swi = observablesStream.pipe(ops.switch_latest())
 
 def publish(on_off_status):
     print(f"Received message: {on_off_status}")
-    #mqtt_client.publish("WINTERCAT/test", json.dumps(
+    # mqtt_client.publish("WINTERCAT/test", json.dumps(
    #     {"messageType": "heatRelay", "value": on_off_status}))
 
 
