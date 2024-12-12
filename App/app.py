@@ -70,19 +70,26 @@ obs = mqtt_client_observable = mqttClientObservable.get_mqtt_client_observable()
 
 )
 
+error_ocurred = False
+def onError(e):
+    print(f"Error occurred: {e}")
+    global error_ocurred
+    error_ocurred = True
+
 subscription = obs.subscribe(
     on_next=lambda e: publish(client=e["client"], msg=e["msg"]),
-    on_error=lambda e: print(f"Error occurred: {e}"),
+    on_error=onError ,
     on_completed=lambda: print("Stream completed!")
 )
+
 
 
 try:
     # Keep the program running to receive messages
     print("Press CTRL+C to exit...")
-    while True:
+    while not error_ocurred:
         time.sleep(1)
-except KeyboardInterrupt:
+except:
     print("Exiting...")
 finally:
     subscription.dispose()
