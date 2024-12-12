@@ -49,7 +49,7 @@ def get_app_observable(client: mqtt_client.Client):
             ops.map(lambda _: False)
         )
 
-    return rx.merge(control_observable, scale_stream, cron_observable).pipe(
+    return rx.merge(control_observable, scale_stream, cron_observable, rx.of(False)).pipe(
         ops.distinct_until_changed(),
         ops.do_action(lambda x: print(f"Setting Control to : {x}")),
         ops.map(lambda x: get_ON_switching_obs() if x["value"] else get_OFF_switching_obs()),
