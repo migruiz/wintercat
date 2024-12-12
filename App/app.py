@@ -35,17 +35,24 @@ def get_app_observable(client: mqtt_client.Client):
     scale_stream = scale.scale_observable(client).pipe(
         ops.filter(lambda _: SCALE_ENABLE))
 
-    def get_switching_obs():
+    def get_ON_switching_obs():
         return rx.interval(1 * 60).pipe(
             ops.start_with(1),
             ops.scan(accumulator=lambda acc, _: acc +
                      1 if acc < 60 else 1, seed=0),
             ops.map(lambda x: x <= TEMP_SETTING)
         )
+        
+    def get_OFF_switching_obs():
+        return rx.interval(1 * 60).pipe(
+            ops.start_with(False),
+            ops.map(lambda _: False)
+        )
 
     return rx.merge(control_observable, scale_stream, cron_observable).pipe(
-        ops.do_action(lambda x: print(x)),
-        ops.map(lambda x: get_switching_obs() if x["value"] else rx.of(False)),
+        ops.distinct_until_changed(),
+        ops.do_action(lambda x: print(f"Setting Control to : {x}")),
+        ops.map(lambda x: get_ON_switching_obs() if x["value"] else get_OFF_switching_obs()),
         ops.switch_latest()
     )
 
